@@ -4,6 +4,8 @@ A binary editor rendered with Win32, Direct3D 11, Direct2D 1.1, and DirectWrite,
 
 For development architecture, invariants, and the change checklist, see [CODEX.md](CODEX.md). Developer-facing comments in the source code are written entirely in English.
 
+日本語のREADMEは[こちら](README.md)です。
+
 ## Build
 
 Open `BinEdit.slnx` in Visual Studio 2026 and build `x64` `Debug` or `Release`. The project uses the `v145` toolset.
@@ -78,7 +80,7 @@ The search screen, bit-manipulation tool, and "About BinEdit" screen are also re
 
 ### Asynchronous search
 
-Search runs asynchronously against a shared, immutable snapshot created from the editing data. The candidate range is split across up to 16 workers to match hardware parallelism, while preserving overlapping matches, up to 10,000 highlighted results, and F3 wraparound. The UI thread and R2PR rendering are never blocked during search, and outdated search generations are cooperatively canceled on edit, tab switch, file switch, or window close. Rapid consecutive input coalesces re-searches into a 150 ms window. The snapshot's lifetime is retained until the coordinator and all workers finish, so background processing never holds a borrowed reference to the caller's byte buffer.
+Search runs asynchronously against a shared, immutable snapshot created from the editing data. The candidate range is split across up to 16 workers to match hardware parallelism, while preserving overlapping matches, up to 10,000 highlighted results, and F3 wraparound. The pattern is split at wildcard bytes into literal fragments; an all-wildcard pattern enumerates candidate positions directly. Otherwise, the byte position with the lowest sampled document frequency becomes the anchor, scanned with a two-byte SSE2 SIMD seed in 16-byte blocks, and only those candidates are verified against the complete pattern. A worker stops early once the highlight cap and the F3 position are settled, so scans of frequently matching patterns avoid scanning every position. The UI thread and R2PR rendering are never blocked during search, and outdated search generations are cooperatively canceled on edit, tab switch, file switch, or window close. Rapid consecutive input coalesces re-searches into a 150 ms window. The snapshot's lifetime is retained until the coordinator and all workers finish, so background processing never holds a borrowed reference to the caller's byte buffer.
 
 ### File I/O
 
